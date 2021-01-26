@@ -1,6 +1,10 @@
 import numpy as np
 
 
+# TODO:
+#  add predict probabilities function
+#  add get params function
+
 # from sklearn.utils import check_X_y
 # from sklearn.utils.multiclass import check_classification_targets
 
@@ -43,10 +47,10 @@ class Estimator(object):
                             L[i][j] += self.weight(self.X_[i, :], self.X_[k, :])
         return L / self.n_
 
-    def epsilon_finder(self, q=0.9, lmbd_thr=1e-3):
+    def epsilon_finder(self, q=0.9, lambda_thr=1e-3):
 
         j = 1
-        eig_vals_vectors = []
+        eig_values_vectors = []
 
         while True:
 
@@ -54,57 +58,25 @@ class Estimator(object):
             L = self.graph_Laplacian()
             eigen_values, eigen_vectors = np.linalg.eig(L)
 
-            eig_vals_vectors = np.append(eig_vals_vectors, eigen_values)
+            eig_values_vectors = np.append(eig_values_vectors, eigen_values)
 
-            if eigen_values[1] < lmbd_thr:
+            if eigen_values[1] < lambda_thr:
                 break
             j += 1
 
-        eig_vals_vectors = np.resize(eig_vals_vectors, new_shape=(-1, self.n_))
-        if eig_vals_vectors.shape[0] <= 1:
+        eig_values_vectors = np.resize(eig_values_vectors, new_shape=(-1, self.n_))
+        if eig_values_vectors.shape[0] <= 1:
             return q ** (j - 1)
         else:
             d = {}
-            for i in range(eig_vals_vectors.shape[0] - 1):
-                d[i] = np.linalg.norm(eig_vals_vectors[i + 1] - eig_vals_vectors[i])
+            for i in range(eig_values_vectors.shape[0] - 1):
+                d[i] = np.linalg.norm(eig_values_vectors[i + 1] - eig_values_vectors[i])
             return q ** (min(d, key=d.get) + 1)
-
-    def finder_epsilon(self, q=0.9, lmbd_thr=1e-5):
-
-        j = 1
-        eig_vals_vectors = []
-
-        while True:
-
-            self.tol_ = q ** j
-            L = self.graph_Laplacian()
-            eigen_values, eigen_vectors = np.linalg.eig(L)
-
-            eig_vals_vectors = np.append(eig_vals_vectors, eigen_values)
-
-            if eigen_values[1] < lmbd_thr:
-                break
-            j += 1
-
-        eig_vals_vectors = np.resize(eig_vals_vectors, new_shape=(-1, self.n_))
-
-        if eig_vals_vectors.shape[0] <= 1:
-            return np.array([q ** (j - 1)] * self.n_)
-        else:
-            diffs = np.array(
-                [eig_vals_vectors[i + 1] - eig_vals_vectors[i] for i in range(eig_vals_vectors.shape[0] - 1)])
-            idx, order = np.asarray(np.where(abs(diffs) == abs(diffs).min(axis=0)))
-
-            return np.array([q ** idx[i] for i in order])
 
     # --------------------------------------------------------------
 
     def eigen_func(self, x, k):
         numerator, denominator = 0, 0
-
-        # self.tol_ = self.tols_[k]
-        # L = self.graph_Laplacian()
-        # self.eigen_values_, self.eigen_vectors_ = np.linalg.eig(L)
 
         for j in range(self.n_):
             numerator += self.weight(x, self.X_[j, :]) * self.eigen_vectors_[j, k]
@@ -168,18 +140,6 @@ class Estimator(object):
 
         self.tol_ = self.epsilon_finder()
 
-        # self.tols_ = self.finder_epsilon()
-
-        """self.tols_ = np.array(
-            [0.0108, 0.0097, 0.0097, 0.0097, 0.0097, 0.0097, 0.0097, 0.0097, 0.0097, 0.0097, 0.0097, 0.0097, 0.0097,
-             0.0097, 0.0097, 0.0097, 0.0097, 0.0182, 0.0164, 0.0133, 0.0097, 0.0097, 0.0120, 0.0164, 0.0182, 0.0097, 
-             0.0097, 0.0097, 0.0133, 0.0278, 0.0133, 0.0108, 0.0133, 0.0097, 0.0148, 0.0133, 0.0097, 0.0108, 0.0108, 
-             0.0120, 0.0133, 0.0097, 0.0097, 0.0097, 0.0097, 0.0097, 0.0097, 0.0097, 0.0108, 0.0120, 0.0108, 0.0097, 
-             0.0108, 0.0108, 0.0108, 0.0097, 0.0097, 0.0097, 0.0097, 0.0097, 0.0097, 0.0133, 0.0097, 0.0120, 0.0097, 
-             0.0108, 0.0097, 0.0108, 0.0097, 0.0097, 0.0097, 0.0097, 0.0097, 0.0097, 0.0120, 0.0120, 0.0097, 0.0097, 
-             0.0108, 0.0097, 0.0120, 0.0097, 0.0120, 0.0108, 0.0097, 0.0108, 0.0108, 0.0108, 0.0097, 0.0097, 0.0097, 
-             0.0097, 0.0108, 0.0097, 0.0097, 0.0097, 0.0097, 0.0097, 0.0097, 0.0097, ])"""
-
         L = self.graph_Laplacian()
         self.eigen_values_, self.eigen_vectors_ = np.linalg.eig(L)
 
@@ -199,5 +159,3 @@ class Estimator(object):
             pred = 0 if temp <= 0.5 else 1
             y_pred.append(pred)
         return np.array(y_pred)
-# predict proba
-# get params
