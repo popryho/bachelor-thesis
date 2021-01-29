@@ -25,7 +25,6 @@ class Estimator(object):
         self.p_ = p
         self.N_ = N
 
-        self.tols_ = np.empty(0)
         self.X_, self.y_ = np.empty(0), np.empty(0)
         self.X_train_, self.y_train_ = np.empty(0), np.empty(0)
 
@@ -47,7 +46,7 @@ class Estimator(object):
                             L[i][j] += self.weight(self.X_[i, :], self.X_[k, :])
         return L / self.n_
 
-    def epsilon_finder(self, q=0.9, lambda_thr=1e-3):
+    def epsilon_finder(self, q=0.9, lambda_thr=1e-5):
 
         j = 1
         eig_values_vectors = []
@@ -56,22 +55,25 @@ class Estimator(object):
 
             self.tol_ = q ** j
             L = self.graph_Laplacian()
-            eigen_values, eigen_vectors = np.linalg.eig(L)
+            self.eigen_values_, self.eigen_vectors_ = np.linalg.eig(L)
 
-            eig_values_vectors = np.append(eig_values_vectors, eigen_values)
+            eig_values_vectors = np.append(eig_values_vectors, self.eigen_values_)
 
-            if eigen_values[1] < lambda_thr:
+            if self.eigen_values_[1] < lambda_thr:
                 break
             j += 1
 
         eig_values_vectors = np.resize(eig_values_vectors, new_shape=(-1, self.n_))
+
         if eig_values_vectors.shape[0] <= 1:
+            print(j - 1)
             return q ** (j - 1)
         else:
             d = {}
             for i in range(eig_values_vectors.shape[0] - 1):
                 d[i] = np.linalg.norm(eig_values_vectors[i + 1] - eig_values_vectors[i])
-            return q ** (min(d, key=d.get) + 1)
+            print(min(d, key=d.get) + 3)
+            return q ** (min(d, key=d.get) + 3)
 
     # --------------------------------------------------------------
 

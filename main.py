@@ -10,12 +10,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 
-# pd.options.display.max_rows=0
-# pd.options.display.max_columns=0
+import pandas as pd
+
+pd.options.display.max_rows = 100
+pd.options.display.max_columns = 100
 
 
 def plot_dataset(X_, y_, c):
-
     plt.scatter(X_[y_ == -1][:, 0], X_[y_ == -1][:, 1], c=c, cmap='bwr', edgecolors='k')
     plt.scatter(X_[y_ != -1][:, 0], X_[y_ != -1][:, 1], c=y_[y_ != -1], cmap='bwr', edgecolors='k', marker='X', s=200)
 
@@ -35,12 +36,10 @@ def plot_decision_boundary(X_, y_, y_test_, y_pred_):
 
 
 def download_dataset(X_, y_):
-
-    import pandas as pd
-    df = pd.concat([pd.DataFrame(X_),
-                    pd.DataFrame(y_.reshape(-1, 1))],
-                   axis=1)
-    df.to_csv('n=100, m=2.csv')
+    dataset = pd.concat([pd.DataFrame(X_),
+                         pd.DataFrame(y_.reshape(-1, 1))],
+                        axis=1)
+    dataset.to_csv('n=100, m=2.csv')
 
 
 if __name__ == '__main__':
@@ -61,14 +60,13 @@ if __name__ == '__main__':
     est.fit(X, y)
     print("--- %s seconds ---" % (time.time() - start_time))
     print('weights:', est.coeff_, 'tolerance:', est.tol_)
-    y_pred = est.predict(X[y == -1])
-
-    sns.heatmap(confusion_matrix(y_test, y_pred), annot=True, fmt="d")
-    print("Accuracy_score: ", accuracy_score(y_test, y_pred))
-    plt.show()
-
-    plot_dataset(X, y, y_test)
-    plt.show()
-    plot_decision_boundary(X, y, y_test, y_pred)
-    plt.show()
-
+    # y_pred = est.predict(X[y == -1])
+    #
+    # sns.heatmap(confusion_matrix(y_test, y_pred), annot=True, fmt="d")
+    # print("Accuracy_score: ", accuracy_score(y_test, y_pred))
+    # plt.show()
+    #
+    # plot_dataset(X, y, y_test)
+    # plt.show()
+    # plot_decision_boundary(X, y, y_test, y_pred)
+    # plt.show()
