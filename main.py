@@ -59,14 +59,15 @@ if __name__ == '__main__':
     est = Estimator()
     est.fit(X, y)
     print("--- %s seconds ---" % (time.time() - start_time))
+
     print('weights:', est.coeff_, 'tolerance:', est.tol_)
-    # y_pred = est.predict(X[y == -1])
-    #
-    # sns.heatmap(confusion_matrix(y_test, y_pred), annot=True, fmt="d")
-    # print("Accuracy_score: ", accuracy_score(y_test, y_pred))
-    # plt.show()
-    #
-    # plot_dataset(X, y, y_test)
-    # plt.show()
-    # plot_decision_boundary(X, y, y_test, y_pred)
-    # plt.show()
+    y_pred = est.predict(X[y == -1])
+
+    sns.heatmap(confusion_matrix(y_test, y_pred), annot=True, fmt="d")
+    print("Accuracy_score: ", accuracy_score(y_test, y_pred))
+    plt.show()
+
+    plot_dataset(X, y, y_test)
+    plt.show()
+    plot_decision_boundary(X, y, y_test, y_pred)
+    plt.show()

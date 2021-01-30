@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.spatial.distance import pdist, squareform
 
 
 # TODO:
@@ -35,18 +36,12 @@ class Estimator(object):
         return np.exp(-norm ** 2 / (4 * self.tol_))
 
     def graph_Laplacian(self):
-        L = np.zeros((self.n_, self.n_))
-        for i in range(self.n_):
-            for j in range(self.n_):
-                if i != j:
-                    L[i][j] = - self.weight(self.X_[i, :], self.X_[j, :])
-                elif i == j:
-                    for k in range(self.n_):
-                        if i != k:
-                            L[i][j] += self.weight(self.X_[i, :], self.X_[k, :])
+        pairwise_dists = squareform(pdist(self.X_, 'sqeuclidean'))
+        L = - np.exp(- pairwise_dists / (4 * self.tol_))
+        np.fill_diagonal(L, - L.sum(axis=0) - 1)
         return L / self.n_
 
-    def epsilon_finder(self, q=0.9, lambda_thr=1e-5):
+    def epsilon_finder(self, q=0.9, lambda_thr=1e-3):
 
         j = 1
         eig_values_vectors = []
@@ -72,8 +67,8 @@ class Estimator(object):
             d = {}
             for i in range(eig_values_vectors.shape[0] - 1):
                 d[i] = np.linalg.norm(eig_values_vectors[i + 1] - eig_values_vectors[i])
-            print(min(d, key=d.get) + 3)
-            return q ** (min(d, key=d.get) + 3)
+            print(min(d, key=d.get)+1)
+            return q ** (min(d, key=d.get)+1)
 
     # --------------------------------------------------------------
 
