@@ -12,9 +12,10 @@ from scipy.spatial.distance import pdist, squareform
 
 class Estimator(object):
 
-    def __init__(self, tol=1, p=0.5, N=45):
+    def __init__(self, eps_0=1, p=0.5, N=45):
 
-        self.tol_ = tol
+        self.eps_0 = eps_0
+        self.tol_ = 0
         self.n_, self.m_ = 0, 0
 
         self.eigen_values_ = np.empty(0)
@@ -41,19 +42,19 @@ class Estimator(object):
         np.fill_diagonal(L, - L.sum(axis=0) - 1)
         return L / self.n_
 
-    def epsilon_finder(self, q=0.9, lambda_thr=1e-3):
+    def epsilon_finder(self, q=0.9, lambda_thr=1e-5):
 
         j = 1
         eig_values_vectors = []
 
         while True:
 
-            self.tol_ = q ** j
+            self.tol_ = self.eps_0 * q ** j
             L = self.graph_Laplacian()
             self.eigen_values_, self.eigen_vectors_ = np.linalg.eig(L)
 
             eig_values_vectors = np.append(eig_values_vectors, self.eigen_values_)
-
+            # print(self.eigen_values_[1])
             if self.eigen_values_[1] < lambda_thr:
                 break
             j += 1
@@ -67,24 +68,27 @@ class Estimator(object):
             d = {}
             for i in range(eig_values_vectors.shape[0] - 1):
                 d[i] = np.linalg.norm(eig_values_vectors[i + 1] - eig_values_vectors[i])
-            print(min(d, key=d.get)+1)
-            return q ** (min(d, key=d.get)+1)
+            print(min(d, key=d.get) + 1, q ** (min(d, key=d.get) + 1))
+            return q ** (min(d, key=d.get) + 1)
 
     # --------------------------------------------------------------
 
     def eigen_func(self, x, k):
-        numerator, denominator = 0, 0
-
-        for j in range(self.n_):
-            numerator += self.weight(x, self.X_[j, :]) * self.eigen_vectors_[j, k]
-        for j in range(self.n_):
-            denominator += self.weight(x, self.X_[j, :]) - self.n_ * self.eigen_values_[k]
+        numerator = np.dot(
+            list(map(lambda xj: self.weight(xi=x, xj=xj), self.X_)), self.eigen_vectors_[:, k]
+        )
+        denominator = np.sum(list(map(lambda xj: self.weight(xi=x, xj=xj), self.X_))) - self.n_ * self.eigen_values_[k]
         return numerator / denominator
 
     def kernel_function(self, x, t):
         K = 0
+        temp = np.sum(
+            list(map(lambda k_: self.eigen_func(x, k_) * self.eigen_func(t, k_) / (self.n_ * self.eigen_values_[k_]),
+                     range(self.n_)))
+        )
         for k in range(self.n_):
             K += self.eigen_func(x, k) * self.eigen_func(t, k) / (self.n_ * self.eigen_values_[k])
+        # print(temp - K)
         return K
 
     def gram_matrix(self):
@@ -128,12 +132,7 @@ class Estimator(object):
 
         self.X_ = X
         self.y_ = y
-
         self.n_, self.m_ = self.X_.shape
-
-        # L = self.graph_Laplacian()
-        # self.eigen_values_, self.eigen_vectors_ = np.linalg.eig(L)
-        # print(self.eigen_values_)
 
         self.tol_ = self.epsilon_finder()
 
