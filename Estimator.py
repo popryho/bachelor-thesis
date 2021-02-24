@@ -42,7 +42,7 @@ class Estimator(object):
         np.fill_diagonal(L, - L.sum(axis=0) - 1)
         return L / self.n_
 
-    def epsilon_finder(self, q=0.9, lambda_thr=1e-5):
+    def epsilon_finder(self, q=0.9, lambda_thr=1e-6):
 
         j = 1
         eig_values_vectors = []
@@ -67,6 +67,7 @@ class Estimator(object):
         else:
             d = {}
             for i in range(eig_values_vectors.shape[0] - 1):
+                # print(np.linalg.norm(eig_values_vectors[i + 1] - eig_values_vectors[i]))
                 d[i] = np.linalg.norm(eig_values_vectors[i + 1] - eig_values_vectors[i])
             print(min(d, key=d.get) + 1, q ** (min(d, key=d.get) + 1))
             return q ** (min(d, key=d.get) + 1)
@@ -149,6 +150,7 @@ class Estimator(object):
 
     def predict(self, X):
         n_samples = X.shape[0]
+        # 0 if self.decision_function(X[i, :]) <= 0.5 else 1
         y_pred = []
         for i in range(n_samples):
             temp = self.decision_function(X[i, :])

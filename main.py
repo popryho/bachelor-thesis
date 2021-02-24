@@ -21,14 +21,14 @@ def plot_dataset(X_, y_, c):
     plt.scatter(X_[y_ != -1][:, 0], X_[y_ != -1][:, 1], c=y_[y_ != -1], cmap='bwr', edgecolors='k', marker='X', s=200)
 
 
-def plot_decision_boundary(X_, y_, y_test_, y_pred_):
+def plot_decision_boundary(X_, y_, y_test_, y_pred_, estimator):
     x1_min, x1_max = X_[y_ == -1][:, 0].min() - 0.5, X_[y_ == -1][:, 0].max() + 0.5
     x2_min, x2_max = X_[y_ == -1][:, 1].min() - 0.5, X_[y_ == -1][:, 1].max() + 0.5
 
     xx1, xx2 = np.meshgrid(np.arange(x1_min, x1_max, 0.2),
                            np.arange(x2_min, x2_max, 0.2))
 
-    Z = est.predict(np.array([xx1.ravel(), xx2.ravel()]).T).reshape(xx1.shape)
+    Z = estimator.predict(np.array([xx1.ravel(), xx2.ravel()]).T).reshape(xx1.shape)
     plt.contourf(xx1, xx2, Z, alpha=0.7, cmap='bwr')
     plot_dataset(X_, y_, y_pred_)
     plt.text(xx1.max() - .2, xx2.min() + .2, ('%.2f' % accuracy_score(y_test_, y_pred_)).lstrip('0'),
@@ -69,5 +69,5 @@ if __name__ == '__main__':
 
     plot_dataset(X, y, y_test)
     plt.show()
-    plot_decision_boundary(X, y, y_test, y_pred)
+    plot_decision_boundary(X, y, y_test, y_pred, estimator=est)
     plt.show()
