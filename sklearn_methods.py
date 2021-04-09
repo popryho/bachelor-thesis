@@ -1,48 +1,38 @@
-from sklearn.semi_supervised import LabelPropagation, LabelSpreading
-from sklearn.datasets import make_moons
-from sklearn.model_selection import train_test_split
-
-from sklearn.metrics import confusion_matrix
-from sklearn.metrics import accuracy_score
-
+import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-import matplotlib.pyplot as plt
-from main import plot_decision_boundary
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import confusion_matrix
+from sklearn.semi_supervised import (
+    LabelPropagation,
+    LabelSpreading,
+    SelfTrainingClassifier
+)
+from sklearn.svm import SVC
+
+from main import plot_decision_boundary, get_data
 
 
 if __name__ == '__main__':
-
-    X, y = make_moons(n_samples=100,
-                      shuffle=True,
-                      noise=0.05,
-                      random_state=0)
-
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, train_size=2, random_state=42, stratify=y
-    )
+    X_train, X_test, y_train, y_test = get_data()
 
     X = np.concatenate([X_train, X_test], axis=0)
     y = np.concatenate([y_train, -1 * np.ones_like(y_test)], axis=0)
 
-    lblprop = LabelPropagation()
-    lblprop.fit(X, y)
-    y_pred_prop = lblprop.predict(X[y == -1])
+    models = (
+        LabelPropagation(max_iter=10000),
+        LabelSpreading(),
+        SelfTrainingClassifier(base_estimator=SVC(probability=True, gamma="auto"))
+    )
+    color_maps = ('Blues', 'Greens', 'Reds')
 
-    sns.heatmap(confusion_matrix(y_test, y_pred_prop), annot=True, fmt="d", cmap='Blues')
-    print("Accuracy_score: ", accuracy_score(y_test, y_pred_prop))
-    plt.show()
+    for model, cmap in zip(models, color_maps):
+        model.fit(X, y)
+        y_pred = model.predict(X[y == -1])
 
-    plot_decision_boundary(X, y, y_test, y_pred_prop, lblprop)
-    plt.show()
+        sns.heatmap(confusion_matrix(y_test, y_pred), annot=True, fmt="d", cmap=cmap)
+        print('-'*50, f'\nModel name: {model.__str__()}\n'
+              f'Accuracy_score: {accuracy_score(y_test, y_pred)}')
+        plt.show()
 
-    lblsprd = LabelSpreading()
-    lblsprd.fit(X, y)
-    y_pred_sprd = lblsprd.predict(X[y == -1])
-
-    sns.heatmap(confusion_matrix(y_test, y_pred_sprd), annot=True, fmt="d", cmap='Greens')
-    print("Accuracy_score: ", accuracy_score(y_test, y_pred_sprd))
-    plt.show()
-
-    plot_decision_boundary(X, y, y_test, y_pred_sprd, lblsprd)
-    plt.show()
+        plot_decision_boundary(X, y, y_test, y_pred, model)

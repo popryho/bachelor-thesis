@@ -1,24 +1,35 @@
-from Estimator import Estimator
+from time import time
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
 from sklearn.datasets import make_moons
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import train_test_split
 
-from sklearn.metrics import confusion_matrix
-from sklearn.metrics import accuracy_score
-
-import seaborn as sns
-import numpy as np
-import matplotlib.pyplot as plt
-import time
-
-import pandas as pd
+from Estimator import Estimator
 
 pd.options.display.max_rows = 100
 pd.options.display.max_columns = 100
 
 
+def get_data(n_samples=100, noise=0.05):
+    X_, y_ = make_moons(n_samples=n_samples,
+                        shuffle=True,
+                        noise=noise,
+                        random_state=0)
+
+    return train_test_split(
+        X_, y_, train_size=2, random_state=42, stratify=y_
+    )
+
+
 def plot_dataset(X_, y_, c):
     plt.scatter(X_[y_ == -1][:, 0], X_[y_ == -1][:, 1], c=c, cmap='bwr', edgecolors='k')
     plt.scatter(X_[y_ != -1][:, 0], X_[y_ != -1][:, 1], c=y_[y_ != -1], cmap='bwr', edgecolors='k', marker='X', s=200)
+    plt.show()
 
 
 def plot_decision_boundary(X_, y_, y_test_, y_pred_, estimator):
@@ -43,31 +54,23 @@ def download_dataset(X_, y_):
 
 
 if __name__ == '__main__':
-    X, y = make_moons(n_samples=100,
-                      shuffle=True,
-                      noise=0.05,
-                      random_state=0)
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, train_size=2, random_state=42, stratify=y
-    )
+    X_train, X_test, y_train, y_test = get_data(n_samples=100, noise=0.05)
 
     X = np.concatenate([X_train, X_test], axis=0)
     y = np.concatenate([y_train, -1 * np.ones_like(y_test)], axis=0)
 
-    start_time = time.time()
+    start_time = time()
     est = Estimator()
     est.fit(X, y)
-    print("--- %s seconds ---" % (time.time() - start_time))
 
-    print('weights:', est.coeff_, 'tolerance:', est.tol_)
+    print(f'--- {time() - start_time} seconds ---')
+    print(f'weights: {est.coeff_}, tolerance: {est.tol_}')
     y_pred = est.predict(X[y == -1])
 
     sns.heatmap(confusion_matrix(y_test, y_pred), annot=True, fmt="d")
-    print("Accuracy_score: ", accuracy_score(y_test, y_pred))
+    print(f'Accuracy_score: {accuracy_score(y_test, y_pred)}')
     plt.show()
 
     plot_dataset(X, y, y_test)
-    plt.show()
     plot_decision_boundary(X, y, y_test, y_pred, estimator=est)
-    plt.show()
