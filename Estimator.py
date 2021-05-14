@@ -30,6 +30,13 @@ class Estimator(object):
         self.X_, self.y_ = np.empty(0), np.empty(0)
         self.X_train_, self.y_train_ = np.empty(0), np.empty(0)
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}(' \
+               f'Ɛ₀={self.eps_0}, ' \
+               f'tol={self.tol_}, ' \
+               f'p={self.p_}, ' \
+               f'N={self.N_})'
+
     # --------------------------------------------------------------
 
     def weight(self, xi, xj):
@@ -54,7 +61,6 @@ class Estimator(object):
             self.eigen_values_, self.eigen_vectors_ = np.linalg.eig(L)
 
             eig_values_vectors = np.append(eig_values_vectors, self.eigen_values_)
-            # print(self.eigen_values_[1])
             if self.eigen_values_[1] < lambda_thr:
                 break
             j += 1
@@ -62,14 +68,11 @@ class Estimator(object):
         eig_values_vectors = np.resize(eig_values_vectors, new_shape=(-1, self.n_))
 
         if eig_values_vectors.shape[0] <= 1:
-            print(j - 1)
             return q ** (j - 1)
         else:
             d = {}
             for i in range(eig_values_vectors.shape[0] - 1):
-                # print(np.linalg.norm(eig_values_vectors[i + 1] - eig_values_vectors[i]))
                 d[i] = np.linalg.norm(eig_values_vectors[i + 1] - eig_values_vectors[i])
-            print(min(d, key=d.get) + 1, q ** (min(d, key=d.get) + 1))
             return q ** (min(d, key=d.get) + 1)
 
     # --------------------------------------------------------------
@@ -83,13 +86,8 @@ class Estimator(object):
 
     def kernel_function(self, x, t):
         K = 0
-        temp = np.sum(
-            list(map(lambda k_: self.eigen_func(x, k_) * self.eigen_func(t, k_) / (self.n_ * self.eigen_values_[k_]),
-                     range(self.n_)))
-        )
         for k in range(self.n_):
             K += self.eigen_func(x, k) * self.eigen_func(t, k) / (self.n_ * self.eigen_values_[k])
-        # print(temp - K)
         return K
 
     def gram_matrix(self):
@@ -149,11 +147,8 @@ class Estimator(object):
         return self
 
     def predict(self, X):
-        n_samples = X.shape[0]
-        # 0 if self.decision_function(X[i, :]) <= 0.5 else 1
-        y_pred = []
-        for i in range(n_samples):
-            temp = self.decision_function(X[i, :])
-            pred = 0 if temp <= 0.5 else 1
-            y_pred.append(pred)
+        return np.where(self.predict_proba(X) > .5, 1, 0)
+
+    def predict_proba(self, X):
+        y_pred = [self.decision_function(X[i, :]) for i in range(X.shape[0])]
         return np.array(y_pred)
