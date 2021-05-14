@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.spatial.distance import pdist, squareform
+from tqdm import tqdm
 
 
 # TODO:
@@ -65,7 +66,7 @@ class Estimator(object):
                 break
             j += 1
 
-        eig_values_vectors = np.resize(eig_values_vectors, new_shape=(-1, self.n_))
+        eig_values_vectors = np.reshape(eig_values_vectors, newshape=(-1, self.n_))
 
         if eig_values_vectors.shape[0] <= 1:
             return q ** (j - 1)
@@ -78,11 +79,8 @@ class Estimator(object):
     # --------------------------------------------------------------
 
     def eigen_func(self, x, k):
-        numerator = np.dot(
-            list(map(lambda xj: self.weight(xi=x, xj=xj), self.X_)), self.eigen_vectors_[:, k]
-        )
-        denominator = np.sum(list(map(lambda xj: self.weight(xi=x, xj=xj), self.X_))) - self.n_ * self.eigen_values_[k]
-        return numerator / denominator
+        weights = [self.weight(xi=x, xj=xj) for xj in self.X_]
+        return np.dot(weights, self.eigen_vectors_[:, k]) / (np.sum(weights) - self.n_ * self.eigen_values_[k])
 
     def kernel_function(self, x, t):
         K = 0
@@ -110,7 +108,6 @@ class Estimator(object):
 
         for k in range(self.N_):
             coeffs[k] = np.dot(np.linalg.inv(alpha[k] * Identity + K), self.y_train_)
-
         d = {}
         for k in range(self.N_):
             d[alpha[k]] = np.linalg.norm(np.dot(K, coeffs[k]) - self.y_train_)
@@ -150,5 +147,5 @@ class Estimator(object):
         return np.where(self.predict_proba(X) > .5, 1, 0)
 
     def predict_proba(self, X):
-        y_pred = [self.decision_function(X[i, :]) for i in range(X.shape[0])]
+        y_pred = [self.decision_function(X[i, :]) for i in tqdm(range(X.shape[0]))]
         return np.array(y_pred)
