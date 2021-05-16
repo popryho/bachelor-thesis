@@ -1,5 +1,7 @@
 import inspect
 from collections import defaultdict
+from functools import partial
+from multiprocessing import Pool, cpu_count
 
 import numpy as np
 from scipy.spatial.distance import pdist, squareform
@@ -12,11 +14,12 @@ from tqdm import tqdm
 
 class Estimator(object):
 
-    def __init__(self, eps_0=1, p_=0.5, N_=45):
+    def __init__(self, eps_0=1, p_=0.5, N_=45, n_jobs=None):
 
         self.eps_0 = eps_0
         self.tol_ = 0
         self.n_, self.m_ = 0, 0
+        self.n_jobs = n_jobs
 
         self.eigen_values_ = np.empty(0)
         self.eigen_vectors_ = np.empty(0)
@@ -91,11 +94,7 @@ class Estimator(object):
     def set_params(self, **params):
         """
         Set the parameters of this estimator.
-
-        The method works on simple estimators as well as on nested objects
-        (such as :class:`~sklearn.pipeline.Pipeline`). The latter have
-        parameters of the form ``<component>__<parameter>`` so that it's
-        possible to update each component of a nested object.
+        The method works on simple estimators as well as on nested objects.
 
         Parameters
         ----------
@@ -241,5 +240,17 @@ class Estimator(object):
         return np.where(self.predict_proba(X) > .5, 1, 0)
 
     def predict_proba(self, X):
-        y_pred = [self.decision_function(X[i, :]) for i in tqdm(range(X.shape[0]))]
-        return np.array(y_pred)
+        if self.n_jobs:
+            cores = self.n_jobs
+        else:
+            cores = cpu_count()
+
+        data_split = np.array_split(X, cores)
+        pool = Pool(cores)
+        y_pred = np.concatenate(
+            pool.map(partial(np.apply_along_axis, self.decision_function, 1),
+                     tqdm(data_split))
+        )
+        pool.close()
+        pool.join()
+        return y_pred
