@@ -4,12 +4,7 @@ from functools import partial
 from multiprocessing import Pool, cpu_count
 
 import numpy as np
-from scipy.spatial.distance import pdist, squareform
 from tqdm import tqdm
-
-
-# from sklearn.utils import check_X_y
-# from sklearn.utils.multiclass import check_classification_targets
 
 
 class Estimator(object):
@@ -135,12 +130,21 @@ class Estimator(object):
 
     def weight(self, xi, xj):
         norm = np.linalg.norm(xi - xj)
-        return np.exp(-norm ** 2 / (4 * self.tol_))
+        if norm <= self.tol_:
+            return (4 * np.pi * self.tol_) ** (-(self.m_ + 2) / 2) * np.exp(-norm ** 2 / (4 * self.tol_))
+        else:
+            return 0
 
     def graph_Laplacian(self):
-        pairwise_dists = squareform(pdist(self.X_, 'sqeuclidean'))
-        L = - np.exp(- pairwise_dists / (4 * self.tol_))
-        np.fill_diagonal(L, - L.sum(axis=0) - 1)
+        L = np.zeros((self.n_, self.n_))
+        for i in range(self.n_):
+            for j in range(self.n_):
+                if i != j:
+                    L[i][j] = - self.weight(self.X_[i, :], self.X_[j, :])
+                elif i == j:
+                    for k in range(self.n_):
+                        if i != k:
+                            L[i][j] += self.weight(self.X_[i, :], self.X_[k, :])
         return L / self.n_
 
     def epsilon_finder(self, q=0.9, lambda_thr=1e-6):
